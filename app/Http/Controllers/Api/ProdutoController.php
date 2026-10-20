@@ -1,71 +1,61 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Http\Resources\ProdutoResource;
 use App\Models\Produto;
+use App\Http\Resources\ProdutoResource;
 use Illuminate\Http\Request;
 
 class ProdutoController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        return ProdutoResource::collection(Produto::latest()->paginate(10));
+        return ProdutoResource::collection(Produto::all());
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        $dados = $request->validate([
-            'nome' => ['required', 'string', 'max:255'], 
-            'descricao' => 'nullable|string',
-            'preco' => ['required', 'numeric', 'min:0'],
-            'estoque' => 'sometimes|integer|min:0',
+        $validated = $request->validate([
+            'nome'        => 'required|string|max:255',
+            'descricao'   => 'nullable|string',
+            'preco'       => 'required|numeric',
+            'preco_custo' => 'required|numeric',
+            'estoque'     => 'required|integer',
         ]);
 
-        $produto = Produto::create($dados);
+        $produto = Produto::create($validated);
 
-        // Código 201 : Recurso Criado
         return new ProdutoResource($produto);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Produto $produto)
+    public function show(string $id)
     {
+        $produto = Produto::findOrFail($id);
         return new ProdutoResource($produto);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Produto $produto)
+    public function update(Request $request, string $id)
     {
-        $dados = $request->validate([
-            'nome' => ['sometimes', 'string', 'max:255'], 
-            'descricao' => 'nullable|string',
-            'preco' => ['sometimes', 'numeric', 'min:0'],
-            'estoque' => 'sometimes|integer|min:0',
+        $produto = Produto::findOrFail($id);
+
+        $validated = $request->validate([
+            'nome'        => 'sometimes|required|string|max:255',
+            'descricao'   => 'nullable|string',
+            'preco'       => 'sometimes|required|numeric',
+            'preco_custo' => 'sometimes|required|numeric',
+            'estoque'     => 'sometimes|required|integer',
         ]);
 
-        $produto->update($dados);
+        $produto->update($validated);
 
         return new ProdutoResource($produto);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Produto $produto)
+    public function destroy(string $id)
     {
+        $produto = Produto::findOrFail($id);
         $produto->delete();
-        return response()->noContent(); // 204
+
+        return response()->json(['message' => 'Produto removido com sucesso'], 200);
     }
 }
